@@ -142,9 +142,11 @@ class App:
         # Create radio buttons for A certificate and B certificate
         self.radio_a = tk.Radiobutton(self.root, text="A Certificate", variable=self.certificate_var, value="A")
         self.radio_b = tk.Radiobutton(self.root, text="B Certificate", variable=self.certificate_var, value="B")
-        self.radio_b = tk.Radiobutton(self.root, text="B Certificate", variable=self.certificate_var, value="C")
+        self.radio_c = tk.Radiobutton(self.root, text="C Certificate", variable=self.certificate_var, value="C")
         self.radio_a.pack(pady=5)
         self.radio_b.pack(pady=5)
+        self.radio_c.pack(pady=5)
+
 
         self.btn_start = tk.Button(self.root, text="Start", command=self.start, width=10)
         self.btn_start.pack(pady=15)
@@ -154,6 +156,7 @@ class App:
         self.btn_start.destroy()
         self.radio_a.destroy()
         self.radio_b.destroy()
+        self.radio_c.destroy()
         self.label.config(text="Enter Marking Scheme for:")
 
         # Create a label frame to group the input fields
@@ -330,7 +333,7 @@ class App:
                 
                 cv2.imwrite(os.path.join(output_path, "evaluated", f"{regno}_inp.tif"), imgInput)
                 cv2.imwrite(os.path.join(output_path, "evaluated", f"{regno}_out.tif"), imgOutput)
-        # print("hello",all_results1)
+        # print("hello",all_results2)
         # Convert the list of results to a pandas DataFrame
         df1 = pd.DataFrame(all_results1, columns=["S.No","Enrollment No", "Set", "AdmitCard No", "CorrectAns", "IncorrectAns", "Left","paper1","paper2","paper3","paper4", "Score","Grade"])
         df2 = pd.DataFrame(all_results2)
@@ -376,7 +379,7 @@ class App:
         for filename in os.listdir(self.folder_path):
             if filename.endswith(".jpg") or filename.endswith(".JPG") or filename.endswith(".png") or filename.endswith(".tif"):
                 # Process the OMR sheet
-                results1,results2,imgInput,imgOutput= main.process_omr_sheet(os.path.join(self.folder_path, filename),filename,idx, self.input1, self.input2, self.input3, self.thresh, self.answer_key_path,num_questions)
+                results1,results2,imgInput,imgOutput= main.process_omr_sheet(os.path.join(self.folder_path, filename),filename,idx, self.input1, self.input2, self.input3, self.thresh, self.answer_key_path,num_questions,selected_certificate)
 
                 if not results1 or not results2:
                         # Move the file to the non-evaluated folder
@@ -444,7 +447,7 @@ class App:
             if filename.endswith(".jpg") or filename.endswith(".JPG") or filename.endswith(".png") or filename.endswith(".tif"):
                 # Process the OMR sheet
                 self.root.iconify()
-                results1,results2,imgInput,imgOutput= main.process_omr_sheet(os.path.join(self.folder_path, filename),filename,idx, self.input1, self.input2, self.input3, self.thresh, self.answer_key_path,num_questions)
+                results1,results2,imgInput,imgOutput= main.process_omr_sheet(os.path.join(self.folder_path, filename),filename,idx, self.input1, self.input2, self.input3, self.thresh, self.answer_key_path,num_questions,selected_certificate)
                 if not results1 or not results2:
                     # Move the file to the non-evaluated folder
                     # shutil.move(os.path.join(self.folder_path, filename), os.path.join(non_evaluated_folder, filename))
