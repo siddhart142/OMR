@@ -317,22 +317,26 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
                         ch=chr(j+48)
             #     # print(Gtotal)
             elif i==4:
-                for j in range (0,2):
-                    x,y,w,h,roi,total=omrUtlis.coOrdinates(i,j,row,col,response_sheet_thresh)
-                    if total>Gtotal:
-                        # if count==1:
-                        #     errorM=1
-                        count=1
-                        ansx=x
-                        ansy=y
-                        answ=w
-                        ansh=h
-                        Gtotal=total
-                        errorR=0
-                        if(j==0):
-                            ch='S'
-                        else:
-                            ch='J'
+                # for j in range (0,2):
+                #     x,y,w,h,roi,total=omrUtlis.coOrdinates(i,j,row,col,response_sheet_thresh)
+                #     if total>Gtotal:
+                #         # if count==1:
+                #         #     errorM=1
+                #         count=1
+                #         ansx=x
+                #         ansy=y
+                #         answ=w
+                #         ansh=h
+                #         Gtotal=total
+                #         errorR=0
+                #         if(j==0):
+                #             ch='S'
+                #         else:
+                #             ch='J'
+                if(selected_certificate=='A'):
+                    ch='J'
+                else:
+                    ch='S'
             elif i==5:
                 for j in range (0,2):
                     x,y,w,h,roi,total=omrUtlis.coOrdinates(i,j,row,col,response_sheet_thresh)
