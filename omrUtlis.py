@@ -1,100 +1,91 @@
 import cv2
 import numpy as np
-from imutils import contours
+
 
 def getPerspective(response_sheet,min_area,max_area):
     
+# Parameters (Adjust as needed)
+
+    # Read image (Assuming response_sheet is pre-loaded)
     response_sheet_gray = cv2.cvtColor(response_sheet, cv2.COLOR_BGR2GRAY)
-    # response_sheet_blur = cv2.GaussianBlur(response_sheet_gray,(5,5),0)
-    _, response_sheet_thresh = cv2.threshold(response_sheet_gray, 200, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
-    # img_erosion = cv2.erode(response_sheet_thresh, kernel, iterations=1)
-    # cv2.imshow("th",response_sheet_thresh)
-    # cv2.imshow("rs",img_erosion)
-    # cv2.waitKey(0)
-    contours, hierarchy = cv2.findContours(response_sheet_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    # print(contours)
-    # cv2.drawContours(response_sheet, contours, -1, (0, 255, 0), 3)
-    # cv2.imshow("rs",response_sheet)
-    # cv2.waitKey(0)
+    _, response_sheet_thresh = cv2.threshold(response_sheet_gray, 150, 255, cv2.THRESH_BINARY_INV)
+
+    # Find contours
+    contours, _ = cv2.findContours(response_sheet_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     rects1 = []
-    xmin=1000
-    xmax=0
-    ymin=100
-    ymax=0
-    idx=1
-    counter = 1
+
     for cnt in contours:
         area = cv2.contourArea(cnt)
-        x, y, W, H = cv2.boundingRect(cnt)
-        roi=response_sheet_thresh[y:y+H,x:x+W]
-        total=cv2.countNonZero(roi)
-        if area > min_area and area < max_area and W>=20 and W<=27 and H>=10 and H<=17  and  total>=0.8*area :
-            x, y, w, h = cv2.boundingRect(cnt)
-            cv2.drawContours(response_sheet,[cnt],-1,255,-1)
-            rects1.append((x+y,x, y, w, h))
-            # print("hello")
+        x, y, w, h = cv2.boundingRect(cnt)
+        roi = response_sheet_thresh[y:y+h, x:x+w]
+        total = cv2.countNonZero(roi)
 
-            # cv2.putText(response_sheet, str(counter), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (155, 155, 155), 2)
+        # Filter based on size and filled area
+        if min_area < area < max_area and 18 <= w <= 27 and 10 <= h <= 17 and total >= 0.8 * area:
+            rects1.append((x, y, w, h))  # Store only needed values
 
-            counter += 1 
-    # print(counter)
-    # cv2.imshow("rs",response_sheet)
-    # cv2.waitKey(0)
-    rects1.sort(key = lambda x: x[0])
+    # Ensure at least 4 points are found
+    if len(rects1) < 4:
+        raise ValueError("Less than 4 valid boxes found! Adjust filtering parameters.")
+
+    # Sort by x-coordinate (leftmost to rightmost)
+    rects1.sort(key=lambda r: r[0])
+
     # print(rects1)
+    # Get two extreme left and two extreme right
+    left_boxes = sorted(rects1[:2], key=lambda r: r[1])   # Sort leftmost by y (top, bottom)
+    right_boxes = sorted(rects1[-2:], key=lambda r: r[1]) # Sort rightmost by y (top, bottom)
 
-    def is_corner(rect, page_width, page_height, threshold_distance=100):
-        x, y, w, h = rect[1], rect[2], rect[3], rect[4]
+    # print(left_boxes)
+    # print(right_boxes)
 
-        # Calculate rectangle center
-        center_x = x + w // 2
-        center_y = y + h // 2
+    # Extract final corner points
+    top_left, bottom_left = left_boxes
+    top_right, bottom_right = right_boxes
 
-        # Check distance from edges
-        distance_to_edges = min(center_x, center_y, page_width - center_x, page_height - center_y)
-        # print(distance_to_edges)
-        # Customize this threshold based on your specific scenario
-        return distance_to_edges < threshold_distance
+    # Draw detected points for debugging
+    for (x, y, w, h) in [top_left, top_right, bottom_left, bottom_right]:
+        cv2.circle(response_sheet, (x + w//2, y + h//2), 5, (0, 0, 255), -1)
 
-    # Assuming page_width and page_height are known
-    page_width = 595
-    page_height = 841
-
-    # Your list of rectangles
-    # all_rectangles = [(132, 33, 99, 21, 11), (645, 544, 101, 22, 10), (773, 30, 743, 22, 10), (1199, 477, 722, 20, 12), (1285, 542, 743, 21, 11)]
-
-    # Filter out corner rectangles
-    rects = [rect for rect in rects1 if is_corner(rect, page_width, page_height)]
-
-    # Now corner_rectangles should contain only the four corner rectangles
-    # print(rects)
-
-    cv2.circle(response_sheet,(rects[-1][1]+rects[-1][3],rects[-1][2]+rects[-1][4]),1,(0,0,255,128),cv2.FILLED)
-    cv2.circle(response_sheet,(rects[-2][1],rects[-2][2]+rects[-2][4]),1,(0,0,255,128),cv2.FILLED)
-    cv2.circle(response_sheet,(rects[1][1]+rects[1][3],rects[1][2]),1,(0,0,255,128),cv2.FILLED)
-    cv2.circle(response_sheet,(rects[0][1],rects[0][2]),1,(0,0,255,128),cv2.FILLED)
-    xmax=xmax+w+3
-    ymax=ymax+h
-
-    width1=rects[1][1]-rects[0][1]
-    width2=rects[-1][1]-rects[-2][1]
-    height1=rects[-2][2]-rects[0][2]
-    height2=rects[-1][2]-rects[1][2]
-
-
-    Width=max(width2,width1)
-    Height=max(height2,height1)
-
-    input_points=np.array([(rects[0][1],rects[0][2]),(rects[1][1]+rects[1][3],rects[1][2]),(rects[-2][1],rects[-2][2]+rects[2][4]),(rects[-1][1]+rects[-1][3],rects[-1][2]+rects[-1][4])], dtype=np.float32)
-    converted_points=np.array([(0,0),(Width,0),(0,Height),(Width,Height)], dtype=np.float32)
-    
-    matrix=cv2.getPerspectiveTransform(input_points,converted_points)
-    img_output=cv2.warpPerspective(response_sheet,matrix,(Width,Height))
-    
-    # cv2.imshow("rs",response_sheet)
-    # cv2.imshow("o",img_output)
+    # cv2.imshow("Detected Corners", response_sheet)
     # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
+    # ---- Perspective Transformation ----
+    Width = top_right[0] + top_right[2] - top_left[0]  # Right-most x - Left-most x
+    Height = bottom_left[1] + bottom_left[3] - top_left[1]  # Bottom-most y - Top-most y
+
+    # Define input points (Detected positions)
+    input_points = np.array([
+        (top_left[0], top_left[1]),  # Top-left
+        (top_right[0] + top_right[2], top_right[1]),  # Top-right
+        (bottom_left[0], bottom_left[1] + bottom_left[3]),  # Bottom-left
+        (bottom_right[0] + bottom_right[2], bottom_right[1] + bottom_right[3])  # Bottom-right
+    ], dtype=np.float32)
+
+    # Define output points (Perfectly aligned rectangle)
+    converted_points = np.array([
+        (0, 0),  # Top-left
+        (Width, 0),  # Top-right
+        (0, Height),  # Bottom-left
+        (Width, Height)  # Bottom-right
+    ], dtype=np.float32)
+
+    # Get transformation matrix
+    matrix = cv2.getPerspectiveTransform(input_points, converted_points)
+
+    # Apply perspective transformation
+    img_output = cv2.warpPerspective(response_sheet, matrix, (Width, Height))
+
+    # Display final transformed image
+    # cv2.imshow("Transformed", img_output)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
     return img_output
+
+
+
 
 def coOrdinates(i,j,row,col,response_sheet_thresh):
     x=row[i][0]

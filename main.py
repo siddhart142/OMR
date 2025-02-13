@@ -1,11 +1,7 @@
 import cv2
-import numpy as np
 import omrUtlis
-from imutils import contours
-import csv
-import os
 import pandas as pd
-import math
+
 
 def element_exists(lst, element1,element2):
     if element1 in lst or element2 in lst:
@@ -36,10 +32,6 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
         regNo="UP2"
 
         responseImg=cv2.imread(image_path)
-        # print(responseImg.shape)
-        # cv2.imshow("img",responseImg)
-        # cv2.waitKey(0)
-        scale_percent = 18  # percent of original size
         # 1052, 744
         # 595 841
 
@@ -50,32 +42,20 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
         # print(width,height)
         # Resize the Image
         responseImg=cv2.resize(responseImg,(width,height),interpolation = cv2.INTER_AREA)
-        # cv2.imshow("img",responseImg)
-        # cv2.waitKey(0)
+       
         #Get perspective
-        responseROI=omrUtlis.getPerspective(responseImg,150,250)
+        responseROI=omrUtlis.getPerspective(responseImg,50,550)
         mainImage = responseROI.copy()
-        # cv2.imshow("p",mainImage)
+        
         # Pre-processing
         response_sheet_gray = cv2.cvtColor(responseROI, cv2.COLOR_BGR2GRAY)
-        # response_sheet_blur=cv2.GaussianBlur(response_sheet_gray, (5, 5), 0)
+        
         _, response_sheet_thresh = cv2.threshold(response_sheet_gray, 200, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
-        # kernel = np.ones((3, 3), np.uint8)
-        # response_sheet_blur = cv2.GaussianBlur(response_sheet_gray,(5,5),0)
-        # _, response_sheet_thresh = cv2.threshold(response_sheet_gray, 200, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
-        # img_erosion = cv2.erode(response_sheet_thresh, kernel, iterations=1)
-        # img_ero = cv2.erode(response_sheet_gray, kernel, iterations=1)
-        # cv2.imshow("th",response_sheet_thresh)
-        # cv2.imshow("rs",img_erosion)
-        # cv2.imshow("rss",img_ero)
-        # cv2.waitKey(0)
+        
         # #Get contours
         contours, hierarchy = cv2.findContours(response_sheet_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        # cv2.drawContours(mainImage, contours, -1, (0, 255, 0), 3)
-        # cv2.imshow("rs",mainImage)
-        # cv2.waitKey(0)
-
+        
         # #Extract Rectangles
         idx=0
         minX=10000000
@@ -92,10 +72,8 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
                 minX=min(minX,x)
                 minY=min(minY,y)
                 idx+=1
-                # print(area)
-        # print(minX,minY)
-        # cv2.imshow("rs",mainImage)
-        # cv2.waitKey(0)
+                
+        
         col=[]
         row=[]
         for rect in rects:
@@ -106,9 +84,7 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
                 row.append((rect[0],rect[1]))
                 cv2.circle(responseROI,(rect[0],rect[1]),3,(0,0,255),cv2.FILLED)
         
-        # cv2.imwrite(imageROI.png,responseROI )
-        # cv2.imshow("rs",responseROI)
-        # cv2.waitKey(0)
+        
         # Sorting row and col matrix
         row.sort(key = lambda x: x[0])
         col.sort(key = lambda x: x[1])
@@ -118,16 +94,11 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
         for rect in rects:
             start=col[9][1]
             end=col[10][1]
+            # print(rect[1],start,end);
             if rect[1]>start+5 and rect[1]<end-5:
                 midRow.append((rect[0],rect[1]))
                 cv2.circle(responseROI,(rect[0],rect[1]),3,(0,0,255),cv2.FILLED)   
         midRow.sort(key = lambda x: x[0])
-        # cv2.imshow("rs",responseROI)
-        # cv2.waitKey(0)
-        # print(row)
-        # print(col)
-        # print(midRow)
-
 
         # Determining the set 
         x=row[13][0]
@@ -154,100 +125,8 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
             # Return an empty array in case of an error
             return [], [], mainImage, None
 
-        
         color=(51,255,51)
         omrUtlis.markTheRegion(ansx,ansy,answ,ansh,responseROI,color)
-
-        # determining category 
-        # category = ''  # Initialize category as an empty string
-        # x = row[7][0]
-        # Gtotal = 35
-        # errorS = 1
-        # color = (0, 255, 255)
-
-        # for i in range(0, 5):
-        #     y = col[i][1]
-        #     w = col[i][2]
-        #     h = col[i][3]
-        #     roi = response_sheet_thresh[y:y+h, x:x+w]
-        #     total = cv2.countNonZero(roi)
-
-        #     if total > Gtotal:
-        #         cat = i  # Store the category index
-        #         ansx = x
-        #         ansy = y
-        #         answ = w
-        #         ansh = h
-        #         Gtotal = total
-        #         errorS = 0
-
-        # if errorS == 1:
-        #     print("Category not entered")
-        #     print("Sending", filename, "to non-evaluated\n")
-        #     # Return an empty array in case of an error
-        #     return [], [], mainImage, None
-
-        # # Map the 'cat' value to the corresponding category
-        # if cat == 0:
-        #     category = 'SC'
-        # elif cat == 1:
-        #     category = 'ST'
-        # elif cat == 2:
-        #     category = 'OBC-NCL'
-        # elif cat == 3:
-        #     category = 'GEN-EWS'
-        # elif cat == 4:
-        #     category = 'Unreserved'
-
-        # # Mark the region with the appropriate color
-        # color = (51, 255, 51)
-        # omrUtlis.markTheRegion(ansx, ansy, answ, ansh, responseROI, color)
-
-        # # Return the category and other details (you can adjust as needed)
-        # # return category, cat, mainImage, responseROI
-
-        # #determine gender
-        # gender = ''  # Initialize gender as an empty string
-        # gender_x = row[9][0]  # Assuming gender data is in `row[8][0]`
-        # Gtotal_gender = 35
-        # errorS_gender = 1
-
-        # # Loop to determine gender (Male or Female)
-        # for i in range(0, 2):  # Assuming only 2 categories: Male and Female
-        #     y = col[i][1]
-        #     w = col[i][2]
-        #     h = col[i][3]
-        #     roi = response_sheet_thresh[y:y+h, gender_x:gender_x+w]
-        #     total = cv2.countNonZero(roi)
-
-        #     if total > Gtotal_gender:
-        #         gender_cat = i  # Store the gender category index
-        #         ansx_gender = gender_x
-        #         ansy_gender = y
-        #         answ_gender = w
-        #         ansh_gender = h
-        #         Gtotal_gender = total
-        #         errorS_gender = 0
-
-        # if errorS_gender == 1:
-        #     print("Gender not entered")
-        #     print("Sending", filename, "to non-evaluated\n")
-        #     # Return an empty array in case of an error
-        #     return [], [], mainImage, None
-
-        # # Map the 'gender_cat' value to the corresponding gender
-        # if gender_cat == 0:
-        #     gender = 'Female'
-        # elif gender_cat == 1:
-        #     gender = 'Male'
-
-        # # Mark the region for gender
-        # color_gender = (255, 51, 255)  # You can choose any color
-        # omrUtlis.markTheRegion(ansx_gender, ansy_gender, answ_gender, ansh_gender, responseROI, color_gender)
-
-        # Return the gender and other details
-        # return gender, gender_cat, mainImage, responseROI
-
 
         # Determining Admit Card Number
         # appended=0
@@ -317,22 +196,6 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
                         ch=chr(j+48)
             #     # print(Gtotal)
             elif i==4:
-                # for j in range (0,2):
-                #     x,y,w,h,roi,total=omrUtlis.coOrdinates(i,j,row,col,response_sheet_thresh)
-                #     if total>Gtotal:
-                #         # if count==1:
-                #         #     errorM=1
-                #         count=1
-                #         ansx=x
-                #         ansy=y
-                #         answ=w
-                #         ansh=h
-                #         Gtotal=total
-                #         errorR=0
-                #         if(j==0):
-                #             ch='S'
-                #         else:
-                #             ch='J'
                 if(selected_certificate=='A'):
                     ch='J'
                 else:
@@ -341,8 +204,6 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
                 for j in range (0,2):
                     x,y,w,h,roi,total=omrUtlis.coOrdinates(i,j,row,col,response_sheet_thresh)
                     if total>Gtotal:
-                        # if count==1:
-                        #     errorM=1
                         count=1
                         ansx=x
                         ansy=y
@@ -358,8 +219,6 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
                 for j in range (0,3):
                     x,y,w,h,roi,total=omrUtlis.coOrdinates(i,j,row,col,response_sheet_thresh)
                     if total>Gtotal:
-                        # if count==1:
-                        #     errorM=1
                         count=1
                         ansx=x
                         ansy=y
@@ -389,13 +248,6 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
             regNo+=ch
             omrUtlis.markTheRegion(ansx,ansy,answ,ansh,responseROI,color)
 
-        # cv2.imshow("rs",responseROI)
-        # cv2.waitKey(0)
-        # # mapping responses with the answer key
-        # posScore=4
-        # negScore=-1
-        # unattemptScore=0
-        # NoOfQues=175
         pos1=0
         pos2=0
         # threshold=30
@@ -454,9 +306,7 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
                             color=(57,41,237)  # Red for incorrect option
 
                         omrUtlis.markTheRegion(x, y, w, h, responseROI, color)
-                        # color=(57,41,237)
-                        # omrUtlis.markTheRegion(x,y,w,h,responseROI,color)
-            # print(idx2,idx)
+                        
             if not(flag):
                 if ans!=-1 and element_exists(Answer_key[Set][idx],chr(ans+97),chr(ans+65)):
                     response_key.append(chr(ans+65))
@@ -549,8 +399,7 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
                         Crpaper4+=1
                     else:
                         Inpaper4+=1
-        # cv2.imshow("img",responseROI)
-        # cv2.waitKey(0)
+       
         result="Pass"
         paper1=Crpaper1*posScore+Inpaper1*negScore
 
