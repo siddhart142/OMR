@@ -370,7 +370,7 @@ class App:
         selected_certificate = self.certificate_var.get()
         if selected_certificate == "A":
             num_questions = 140
-        elif selected_certificate == "B":
+        elif selected_certificate == "B" or selected_certificate == "C":
             num_questions = 175
         else:
             # Default to 175 questions for any other certificate type
@@ -437,7 +437,7 @@ class App:
         selected_certificate = self.certificate_var.get()
         if selected_certificate == "A":
             num_questions = 140
-        elif selected_certificate == "B":
+        elif selected_certificate == "B" or selected_certificate == "C":
             num_questions = 175
         else:
             # Default to 140 questions for any other certificate type
@@ -485,7 +485,7 @@ class App:
         print(end_time-start_time)
 
         # Convert the list of results to a pandas DataFrame
-        df1 = pd.DataFrame(all_results1, columns=["S.No","Enrollment No", "Set", "Gender", "Category", "CorrectAns", "IncorrectAns", "Left", "Score"])
+        df1 = pd.DataFrame(all_results1, columns=["S.No","Enrollment No", "Set", "AdmitCard No", "CorrectAns", "IncorrectAns", "Left","paper1","paper2","paper3","paper4", "Score","Grade"])
         df2 = pd.DataFrame(all_results2)
         columns = ['S.No', 'Enrollment No','AdmitCard No','Set']
         # num_questions = 100

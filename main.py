@@ -67,7 +67,7 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
             roi=response_sheet_thresh[y:y+h,x:x+w]
             aspectRatio=max(h,w)/min(h,w)
             if area>=40 and area<=90 and aspectRatio>=0.8:
-                cv2.drawContours(mainImage, cnt, -1, (0, 255, 0), 3)
+                # cv2.drawContours(mainImage, cnt, -1, (0, 255, 0), 3)
                 rects.append((x,y,w,h))
                 minX=min(minX,x)
                 minY=min(minY,y)
@@ -196,6 +196,8 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
                         ch=chr(j+48)
             #     # print(Gtotal)
             elif i==4:
+                x,y,w,h,roi,total=omrUtlis.coOrdinates(i,0,row,col,response_sheet_thresh)
+                omrUtlis.markTheRegion(x,y,w,h,responseROI,color)
                 if(selected_certificate=='A'):
                     ch='J'
                 else:
@@ -440,6 +442,10 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
         flattened_data = flatten_list([Sno,regNo,schoolCode,Set,response_key,score,result])
         # flattened_data = flatten_list([Sno,regNo,Set,gender,category,response_key,score,result])
         print(filename,Sno,regNo,Set,schoolCode,correctAns,IncorrectAns,Left,paper1,paper2,paper3,paper4,score,result,"\n")
+        # cv2.imshow("main",mainImage)
+        # cv2.waitKey(0)
+        # cv2.imshow("res",responseROI)
+        # cv2.waitKey(0)
         # "S.No","Enrollment No", "Set", "AdmitCard No", "CorrectAns", "IncorrectAns", "Left","paper1","paper2","paper3","paper4", "Score","Grade"
         return [Sno,regNo,Set,schoolCode,correctAns,IncorrectAns,Left,paper1,paper2,paper3,paper4,score,result],flattened_data,mainImage,responseROI
         # return [Sno,regNo,Set,gender,category,correctAns,IncorrectAns,Left,score,result],flattened_data,mainImage,responseROI
