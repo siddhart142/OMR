@@ -29,7 +29,7 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
 
         Set=0
         schoolCode=""
-        regNo="UP20"
+        regNo="UP2"
 
         responseImg=cv2.imread(image_path)
         # 1052, 744
@@ -53,109 +53,31 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
         _, response_sheet_thresh = cv2.threshold(response_sheet_gray, 200, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
         
         # #Get contours
-        contours, hierarchy = cv2.findContours(response_sheet_thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(response_sheet_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        # cv2.imshow("Detected Corners", response_sheet_thresh)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
+        
         # #Extract Rectangles
         idx=0
         minX=10000000
         minY=10000000
         rects=[]
-
-        # for cnt in contours:
-        #     area = cv2.contourArea(cnt)
-        #     x, y, w, h = cv2.boundingRect(cnt)
-        #     roi=response_sheet_thresh[y:y+h,x:x+w]
-        #     aspectRatio=max(h,w)/min(h,w)
-        #     if area == 0:
-        #         continue
-
-        #     fill = cv2.countNonZero(roi)
-        #     fill_ratio = fill / area
-
-        #      has_child = hierarchy[0][idx_cnt][2] != -1
-
-        #     if has_child:
-        #         continue  
-
-        #     if area>=40 and area<=90 and aspectRatio>=0.8 and fill_ratio > 0.95:
-        #         # cv2.drawContours(mainImage, cnt, -1, (0, 255, 0), 3)
-        #         rects.append((x,y,w,h))
-        #         minX=min(minX,x)
-        #         minY=min(minY,y)
-        #         idx+=1
-
-        for idx_cnt, cnt in enumerate(contours):
-
+        for cnt in contours:
             area = cv2.contourArea(cnt)
-            if area == 0:
-                continue
-
             x, y, w, h = cv2.boundingRect(cnt)
-            roi = response_sheet_thresh[y:y+h, x:x+w]
-            aspectRatio = max(h, w) / min(h, w)
-
-            # Fill ratio (safe)
-            fill = cv2.countNonZero(roi)
-            fill_ratio = fill / area
-
-            # 🔑 Hierarchy check (THIS IS THE FIX)
-            has_child = hierarchy[0][idx_cnt][2] != -1
-
-            if has_child:
-                continue   # reject hollow/header rectangles
-
-            if area >= 40 and area <= 90 and aspectRatio >= 0.8 and fill_ratio > 0.95:
-                rects.append((x, y, w, h))
-                minX = min(minX, x)
-                minY = min(minY, y)
-                idx += 1
-
+            roi=response_sheet_thresh[y:y+h,x:x+w]
+            aspectRatio=max(h,w)/min(h,w)
+            if area>=40 and area<=90 and aspectRatio>=0.8:
+                # cv2.drawContours(mainImage, cnt, -1, (0, 255, 0), 3)
+                rects.append((x,y,w,h))
+                minX=min(minX,x)
+                minY=min(minY,y)
+                idx+=1
                 
-        # ---------- REMOVE HEADER RECTANGLE (Y-row density filter) ----------
-        # from collections import defaultdict
-
-        # row_map = defaultdict(list)
-
-        # ROW_TOL = 15
-
-        # for r in rects:
-        #     placed = False
-        #     for ky in row_map:
-        #         if abs(r[1] - ky) <= ROW_TOL:
-        #             row_map[ky].append(r)
-        #             placed = True
-        #             break
-        #     if not placed:
-        #         row_map[r[1]].append(r)
-
-        # # Sort rows top to bottom
-        # rows = sorted(row_map.values(), key=lambda r: min(x[1] for x in r))
-
-        # first_answer_row_y = None
-
-        # for row in rows:
-        #     if len(row) >= 4:   # answer rows have 4+ rectangles
-        #         xs = [r[0] for r in row]
-        #         if max(xs) - min(xs) > 100:  # horizontal grid spread
-        #             first_answer_row_y = min(r[1] for r in row)
-        #             break
-
-        # rects = [r for r in rects if r[1] >= first_answer_row_y]
-
-        # valid_ys = set()
-        # for c in valid_y_clusters:
-        #     valid_ys.update(c)
-
-        # # Filter rects (header rectangle removed here)
-        # rects = [r for r in rects if r[1] in valid_ys]
-
+        
         col=[]
         row=[]
         for rect in rects:
-            if rect[0]>=minX-20 and rect[0]<=minX+20:
+            if rect[0]>=minX-25 and rect[0]<=minX+25:
                 col.append(rect)
                 cv2.circle(responseROI,(rect[0],rect[1]),3,(0,0,255),cv2.FILLED)
             elif rect[1]>=minY-5 and rect[1]<=minY+5:
@@ -178,12 +100,8 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
                 cv2.circle(responseROI,(rect[0],rect[1]),3,(0,0,255),cv2.FILLED)   
         midRow.sort(key = lambda x: x[0])
 
-        # cv2.imshow("Detected Corners", responseROI)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-
         # Determining the set 
-        x=row[13][0] #14
+        x=row[13][0]
         Gtotal=35
         errorS=1
         color=(0,255,255)
@@ -212,7 +130,7 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
 
         # Determining Admit Card Number
         # appended=0
-        for i in range (14,18): #15
+        for i in range (14,18):
             Gtotal=30
             errorA=1
             
@@ -247,21 +165,21 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
         # schoolCode=0000
        
         # Determining Registration Number
-        for i in range (0,13): #1 to 14
+        for i in range (0,13):
             Gtotal=35
             errorR=1
             color=(51,255,51)
             count=0
             errorM=0
-            # if i>=0 and i<=2:
-            #     x=row[i][0]
-            #     y=col[0][1]
-            #     w=col[0][2]
-            #     h=col[0][3]
-            #     omrUtlis.markTheRegion(x,y,w,h,responseROI,color)
-            #     continue
+            if i>=0 and i<=2:
+                x=row[i][0]
+                y=col[0][1]
+                w=col[0][2]
+                h=col[0][3]
+                omrUtlis.markTheRegion(x,y,w,h,responseROI,color)
+                continue
             
-            if i>=6 or i==0 or i==1:
+            if i>=7 or i==3:
                 for j in range (0,10):
                     x,y,w,h,roi,total=omrUtlis.coOrdinates(i,j,row,col,response_sheet_thresh)
                     # print(total)
@@ -277,14 +195,14 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
                         errorR=0
                         ch=chr(j+48)
             #     # print(Gtotal)
-            elif i==2:
+            elif i==4:
                 x,y,w,h,roi,total=omrUtlis.coOrdinates(i,0,row,col,response_sheet_thresh)
                 omrUtlis.markTheRegion(x,y,w,h,responseROI,color)
                 if(selected_certificate=='A'):
                     ch='J'
                 else:
                     ch='S'
-            elif i==3:
+            elif i==5:
                 for j in range (0,2):
                     x,y,w,h,roi,total=omrUtlis.coOrdinates(i,j,row,col,response_sheet_thresh)
                     if total>Gtotal:
@@ -299,21 +217,6 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
                             ch='D'
                         else:
                             ch='W'
-            elif i==4:
-                for j in range (0,2):
-                    x,y,w,h,roi,total=omrUtlis.coOrdinates(i,j,row,col,response_sheet_thresh)
-                    if total>Gtotal:
-                        count=1
-                        ansx=x
-                        ansy=y
-                        answ=w
-                        ansh=h
-                        Gtotal=total
-                        errorR=0
-                        if(j==0):
-                            ch='I'
-                        else:
-                            ch='A'
             else:
                 for j in range (0,3):
                     x,y,w,h,roi,total=omrUtlis.coOrdinates(i,j,row,col,response_sheet_thresh)
@@ -454,61 +357,79 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
                 if(idx2>=0 and idx2<=13):
                     if(check):
                         Crpaper2+=1
+                    elif ans == -1:
+                        pass  # Left – do not count in sectional incorrect
                     else:
                         Inpaper2+=1
                 elif(idx2>=14 and idx2<=95):
                     if(check):
                         Crpaper3+=1
+                    elif ans == -1:
+                        pass  # Left – do not count in sectional incorrect
                     else:
                         Inpaper3+=1
                 else:
                     if(check):
                         Crpaper4+=1
+                    elif ans == -1:
+                        pass  # Left – do not count in sectional incorrect
                     else:
                         Inpaper4+=1
             elif(selected_certificate=='B'):
                 if(idx2>=0 and idx2<=14):
                     if(check):
                         Crpaper2+=1
+                    elif ans == -1:
+                        pass  # Left – do not count in sectional incorrect
                     else:
                         Inpaper2+=1
                 elif(idx2>=15 and idx2<=119):
                     if(check):
                         Crpaper3+=1
+                    elif ans == -1:
+                        pass  # Left – do not count in sectional incorrect
                     else:
                         Inpaper3+=1
                 else:
                     if(check):
                         Crpaper4+=1
+                    elif ans == -1:
+                        pass  # Left – do not count in sectional incorrect
                     else:
                         Inpaper4+=1
             else:
                 if(idx2>=0 and idx2<=4):
                     if(check):
                         Crpaper2+=1
+                    elif ans == -1:
+                        pass  # Left – do not count in sectional incorrect
                     else:
                         Inpaper2+=1
                 elif(idx2>=5 and idx2<=119):
                     if(check):
                         Crpaper3+=1
+                    elif ans == -1:
+                        pass  # Left – do not count in sectional incorrect
                     else:
                         Inpaper3+=1
                 else:
                     if(check):
                         Crpaper4+=1
+                    elif ans == -1:
+                        pass  # Left – do not count in sectional incorrect
                     else:
                         Inpaper4+=1
        
         result="Pass"
-        paper1=Crpaper1*posScore-Inpaper1*negScore
+        paper1=Crpaper1*posScore+Inpaper1*negScore
 
-        paper2=Crpaper2*posScore-Inpaper2*negScore
+        paper2=Crpaper2*posScore+Inpaper2*negScore
 
-        paper3=Crpaper3*posScore-Inpaper3*negScore
+        paper3=Crpaper3*posScore+Inpaper3*negScore
 
-        paper4=Crpaper4*posScore-Inpaper4*negScore
+        paper4=Crpaper4*posScore+Inpaper4*negScore
 
-        score=correctAns*posScore-IncorrectAns*negScore+Left*unattemptScore
+        score=correctAns*posScore+IncorrectAns*negScore+Left*unattemptScore
 
         # papers=[paper1,paper2,paper3,paper4]
         # print(score)
