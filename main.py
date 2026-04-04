@@ -29,7 +29,7 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
 
         Set=0
         schoolCode=""
-        regNo="UP2"
+        regNo="UP20"
 
         responseImg=cv2.imread(image_path)
         # 1052, 744
@@ -166,92 +166,6 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
 
                
         # Determining Registration Number OLD
-        for i in range (0,13):
-            Gtotal=35
-            errorR=1
-            color=(51,255,51)
-            count=0
-            errorM=0
-            if i>=0 and i<=2:
-                x=row[i][0]
-                y=col[0][1]
-                w=col[0][2]
-                h=col[0][3]
-                omrUtlis.markTheRegion(x,y,w,h,responseROI,color)
-                continue
-            
-            if i>=7 or i==3:
-                for j in range (0,10):
-                    x,y,w,h,roi,total=omrUtlis.coOrdinates(i,j,row,col,response_sheet_thresh)
-                    # print(total)
-                    if total>Gtotal:
-                    #     if count==1:
-                    #         errorM=1
-                        count = 1
-                        ansx=x
-                        ansy=y
-                        answ=w
-                        ansh=h
-                        Gtotal=total
-                        errorR=0
-                        ch=chr(j+48)
-            #     # print(Gtotal)
-            elif i==4:
-                x,y,w,h,roi,total=omrUtlis.coOrdinates(i,0,row,col,response_sheet_thresh)
-                omrUtlis.markTheRegion(x,y,w,h,responseROI,color)
-                if(selected_certificate=='A'):
-                    ch='J'
-                else:
-                    ch='S'
-            elif i==5:
-                for j in range (0,2):
-                    x,y,w,h,roi,total=omrUtlis.coOrdinates(i,j,row,col,response_sheet_thresh)
-                    if total>Gtotal:
-                        count=1
-                        ansx=x
-                        ansy=y
-                        answ=w
-                        ansh=h
-                        Gtotal=total
-                        errorR=0
-                        if(j==0):
-                            ch='D'
-                        else:
-                            ch='W'
-            else:
-                for j in range (0,3):
-                    x,y,w,h,roi,total=omrUtlis.coOrdinates(i,j,row,col,response_sheet_thresh)
-                    if total>Gtotal:
-                        count=1
-                        ansx=x
-                        ansy=y
-                        answ=w
-                        ansh=h
-                        Gtotal=total
-                        errorR=0
-                        if(j==0):
-                            ch='A'
-                        elif j==1:
-                            ch='F'
-                        else:
-                            ch='N'
-                if(errorR==1):
-                    print("Registration Number Incomplete")
-                    print("Sending",filename,"to non-evaluated\n")
-                    # Return an empty array in case of an error
-                    return [], [], mainImage, None
-                
-                if(errorM==1):
-                    print("Multiple Bubbles filled for 1 value in Registration Number")
-                    print("Sending",filename,"to non-evaluated\n")
-                    # Return an empty array in case of an error
-                    return [], [], mainImage, None
-
-
-            regNo+=ch
-            omrUtlis.markTheRegion(ansx,ansy,answ,ansh,responseROI,color)
-
-        # Determining Registration Number NEW
         # for i in range (0,13):
         #     Gtotal=35
         #     errorR=1
@@ -336,6 +250,109 @@ def process_omr_sheet(image_path,filename, Sno, posScore, negScore, unattemptSco
 
         #     regNo+=ch
         #     omrUtlis.markTheRegion(ansx,ansy,answ,ansh,responseROI,color)
+
+        # Determining Registration Number NEW
+
+        for i in range (0,13): #1 to 14
+            Gtotal=35
+            errorR=1
+            color=(51,255,51)
+            count=0
+            errorM=0
+            # if i>=0 and i<=2:
+            #     x=row[i][0]
+            #     y=col[0][1]
+            #     w=col[0][2]
+            #     h=col[0][3]
+            #     omrUtlis.markTheRegion(x,y,w,h,responseROI,color)
+            #     continue
+            
+            if i>=6 or i==0 or i==1:
+                for j in range (0,10):
+                    x,y,w,h,roi,total=omrUtlis.coOrdinates(i,j,row,col,response_sheet_thresh)
+                    # print(total)
+                    if total>Gtotal:
+                    #     if count==1:
+                    #         errorM=1
+                        count = 1
+                        ansx=x
+                        ansy=y
+                        answ=w
+                        ansh=h
+                        Gtotal=total
+                        errorR=0
+                        ch=chr(j+48)
+            #     # print(Gtotal)
+            elif i==2:
+                x,y,w,h,roi,total=omrUtlis.coOrdinates(i,0,row,col,response_sheet_thresh)
+                omrUtlis.markTheRegion(x,y,w,h,responseROI,color)
+                if(selected_certificate=='A'):
+                    ch='J'
+                else:
+                    ch='S'
+            elif i==3:
+                for j in range (0,2):
+                    x,y,w,h,roi,total=omrUtlis.coOrdinates(i,j,row,col,response_sheet_thresh)
+                    if total>Gtotal:
+                        count=1
+                        ansx=x
+                        ansy=y
+                        answ=w
+                        ansh=h
+                        Gtotal=total
+                        errorR=0
+                        if(j==0):
+                            ch='D'
+                        else:
+                            ch='W'
+            elif i==4:
+                for j in range (0,2):
+                    x,y,w,h,roi,total=omrUtlis.coOrdinates(i,j,row,col,response_sheet_thresh)
+                    if total>Gtotal:
+                        count=1
+                        ansx=x
+                        ansy=y
+                        answ=w
+                        ansh=h
+                        Gtotal=total
+                        errorR=0
+                        if(j==0):
+                            ch='I'
+                        else:
+                            ch='A'
+            else:
+                for j in range (0,3):
+                    x,y,w,h,roi,total=omrUtlis.coOrdinates(i,j,row,col,response_sheet_thresh)
+                    if total>Gtotal:
+                        count=1
+                        ansx=x
+                        ansy=y
+                        answ=w
+                        ansh=h
+                        Gtotal=total
+                        errorR=0
+                        if(j==0):
+                            ch='A'
+                        elif j==1:
+                            ch='F'
+                        else:
+                            ch='N'
+                if(errorR==1):
+                    print("Registration Number Incomplete")
+                    print("Sending",filename,"to non-evaluated\n")
+                    # Return an empty array in case of an error
+                    return [], [], mainImage, None
+                
+                if(errorM==1):
+                    print("Multiple Bubbles filled for 1 value in Registration Number")
+                    print("Sending",filename,"to non-evaluated\n")
+                    # Return an empty array in case of an error
+                    return [], [], mainImage, None
+
+
+            regNo+=ch
+            omrUtlis.markTheRegion(ansx,ansy,answ,ansh,responseROI,color)
+
 
         pos1=0
         pos2=0

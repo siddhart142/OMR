@@ -162,7 +162,7 @@ class App:
         default_correct = 2.5 if cert == "A" else 2.0
 
         self.create_entry("Correct Answers:", default_correct, 0)
-        self.create_entry("Incorrect Answers:", 0.25, 1)
+        self.create_entry("Incorrect Answers:", -0.25, 1)
         self.create_entry("Unattempted:", 0, 2)
 
         ttk.Button(self.root, text="Submit", command=self.mark_scheme).pack(pady=10)
@@ -292,9 +292,13 @@ class App:
             bg="#add8e6", font=("Arial", 11)
         ).pack(pady=10)
 
+        # tk.Button(self.root, text="Fast Mode", command=self.evaluate_fast).pack(pady=10)
+        # tk.Button(self.root, text="Visibility Mode", command=self.evaluate_fast).pack(pady=10)
+        # tk.Button(self.root, text="Correction Mode", command=self.evaluate_fast).pack(pady=10)
+
         tk.Button(self.root, text="Fast Mode", command=self.evaluate_fast).pack(pady=10)
-        tk.Button(self.root, text="Visibility Mode", command=self.evaluate_fast).pack(pady=10)
-        tk.Button(self.root, text="Correction Mode", command=self.evaluate_fast).pack(pady=10)
+        tk.Button(self.root, text="Visibility Mode", command=self.evaluate_visibility).pack(pady=10)
+        tk.Button(self.root, text="Correction Mode", command=self.evaluate_correction).pack(pady=10)
 
     # ---------------- EVALUATION ----------------
     def evaluate_fast(self):
@@ -333,16 +337,178 @@ class App:
                 cv2.imwrite(os.path.join(evaluated, f"{reg}_out.tif"), img_out)
                 idx += 1
 
-        pd.DataFrame(results1).to_excel(
+
+        # pd.DataFrame(results1).to_excel(
+        #     os.path.join(self.current_output_path, "abstract.xlsx"), index=False
+        # )
+        # pd.DataFrame(results2).to_excel(
+        #     os.path.join(self.current_output_path, "detailed.xlsx"), index=False
+        # )
+        df1 = pd.DataFrame(results1, columns=["S.No","Enrollment No", "Set", "AdmitCard No", "CorrectAns", "IncorrectAns", "Left","paper1","paper2","paper3","paper4", "Score","Grade"])
+        df2 = pd.DataFrame(results2)
+        columns = ['S.No', 'Enrollment No','AdmitCard No','Set']
+        
+        columns.extend(['Q{}'.format(i) for i in range(1,num_q+1)])
+        columns.extend(['Score','Grade'])
+        df2.columns = columns
+        # Write the DataFrame to an Excel file
+        # output_file1 = os.path.join(output_folder, "output1.xlsx")
+        # output_file2 = os.path.join(output_folder, "output2.xlsx")
+        df1.to_excel(
             os.path.join(self.current_output_path, "abstract.xlsx"), index=False
         )
-        pd.DataFrame(results2).to_excel(
+        df2.to_excel(
             os.path.join(self.current_output_path, "detailed.xlsx"), index=False
         )
-
         print("Time taken:", time.time() - start)
         self.finish()
 
+
+    def evaluate_visibility(self):
+        start_time = time.time()
+
+        evaluated = os.path.join(self.current_output_path, "evaluated")
+        non_eval = os.path.join(self.current_output_path, "non_evaluated")
+
+        all_results1 = []
+        all_results2 = []
+        idx = 1
+
+        selected_certificate = self.certificate_var.get()
+        num_questions = 140 if selected_certificate == "A" else 175
+
+        for filename in os.listdir(self.folder_path):
+            if filename.lower().endswith((".jpg", ".png", ".tif")):
+
+                results1, results2, imgInput, imgOutput = main.process_omr_sheet(
+                    os.path.join(self.folder_path, filename),
+                    filename, idx,
+                    self.input1, self.input2, self.input3,
+                    self.thresh,
+                    self.answer_key_path,
+                    num_questions,
+                    selected_certificate
+                )
+
+                if not results1:
+                    shutil.copy(os.path.join(self.folder_path, filename), non_eval)
+                    continue
+
+                cv2.imshow("evaluated_image", imgOutput)
+                cv2.waitKey(0)
+
+                all_results1.append(results1)
+                all_results2.append(results2)
+
+                regno = results1[1]
+                cv2.imwrite(os.path.join(evaluated, f"{regno}_inp.tif"), imgInput)
+                cv2.imwrite(os.path.join(evaluated, f"{regno}_out.tif"), imgOutput)
+
+                idx += 1
+
+        # Save results
+        df1 = pd.DataFrame(all_results1, columns=[
+            "S.No","Enrollment No","Set","AdmitCard No",
+            "CorrectAns","IncorrectAns","Left",
+            "paper1","paper2","paper3","paper4",
+            "Score","Grade"
+        ])
+
+        df2 = pd.DataFrame(all_results2)
+        columns = ['S.No','Enrollment No','AdmitCard No','Set']
+        columns.extend([f"Q{i}" for i in range(1, num_questions+1)])
+        columns.extend(['Score','Grade'])
+        df2.columns = columns
+
+        df1.to_excel(os.path.join(self.current_output_path, "abstract.xlsx"), index=False)
+        df2.to_excel(os.path.join(self.current_output_path, "detailed.xlsx"), index=False)
+
+        print("Time Taken:", time.time() - start_time)
+
+        self.finish()
+
+
+    def evaluate_correction(self):
+        start_time = time.time()
+
+        evaluated = os.path.join(self.current_output_path, "evaluated")
+        non_eval = os.path.join(self.current_output_path, "non_evaluated")
+
+        all_results1 = []
+        all_results2 = []
+        idx = 1
+
+        selected_certificate = self.certificate_var.get()
+        num_questions = 140 if selected_certificate == "A" else 175
+
+        for filename in os.listdir(self.folder_path):
+            if filename.lower().endswith((".jpg", ".png", ".tif")):
+
+                self.root.iconify()
+
+                results1, results2, imgInput, imgOutput = main.process_omr_sheet(
+                    os.path.join(self.folder_path, filename),
+                    filename, idx,
+                    self.input1, self.input2, self.input3,
+                    self.thresh,
+                    self.answer_key_path,
+                    num_questions,
+                    selected_certificate
+                )
+
+                if not results1:
+                    if imgInput is not None:
+                        cv2.imshow("Original_Image", imgInput)
+                        cv2.waitKey(0)
+
+                    shutil.copy(os.path.join(self.folder_path, filename), non_eval)
+                    self.root.deiconify()
+                    continue
+
+                cv2.imshow("Original_Image", imgInput)
+                cv2.imshow("Evaluated_Image", imgOutput)
+
+                confirm = messagebox.askokcancel(
+                    "Confirmation",
+                    "Are you sure you want to consider this Data?"
+                )
+
+                if confirm:
+                    all_results1.append(results1)
+                    all_results2.append(results2)
+
+                    regno = results1[1]
+                    cv2.imwrite(os.path.join(evaluated, f"{regno}_inp.tif"), imgInput)
+                    cv2.imwrite(os.path.join(evaluated, f"{regno}_out.tif"), imgOutput)
+
+                    idx += 1
+                else:
+                    regno = results1[1]
+                    cv2.imwrite(os.path.join(non_eval, f"{regno}.tif"), imgInput)
+
+                cv2.destroyAllWindows()
+                self.root.deiconify()
+
+        print("Time Taken:", time.time() - start_time)
+
+        # Save results
+        df1 = pd.DataFrame(all_results1, columns=[
+            "S.No","Enrollment No","Set","AdmitCard No",
+            "CorrectAns","IncorrectAns","Left",
+            "paper1","paper2","paper3","paper4",
+            "Score","Grade"
+        ])
+
+        df2 = pd.DataFrame(all_results2)
+        columns = ['S.No','Enrollment No','AdmitCard No','Set']
+        columns.extend([f"Q{i}" for i in range(1, num_questions+1)])
+        columns.extend(['Score','Grade'])
+        df2.columns = columns
+
+        df1.to_excel(os.path.join(self.current_output_path, "abstract.xlsx"), index=False)
+        df2.to_excel(os.path.join(self.current_output_path, "detailed.xlsx"), index=False)
+
+        self.finish()
     # ---------------- FINISH ----------------
     def finish(self):
         proceed = messagebox.askyesno(
